@@ -7,6 +7,7 @@ with Ada.Text_IO;           use Ada.Text_IO;
 
 with Ada.Containers.Ordered_Sets;
 with Ada.Strings.Less_Case_Insensitive;
+with Ada.Characters.Handling; use Ada.Characters.Handling;
 
 with AWS.Client;            use AWS.Client;
 with AWS.Messages;          use AWS.Messages;
@@ -45,7 +46,6 @@ procedure Rank_Languages_By_Popularity is
    use Sets;
 
    Counts : Set;
-   Total_Counts : Natural := 0;
 
    procedure Find_Counts (S : String) is
 
@@ -60,15 +60,81 @@ procedure Rank_Languages_By_Popularity is
          end if;
       end Strip_Character;
 
+      function Ignore_Category (L : String) return Boolean is
+         type Unbounded_String_Array is array (Positive range <>)
+           of Unbounded_String;
+         --  This list is quite comprehensive, but not complete
+         Categories_To_Ignore : Unbounded_String_Array
+           := [+"Pages with syntax highlighting errors",
+               +"Programming",
+               +"Examples needing attention",
+               +"Tasks needing attention",
+               +"Language users",
+               +"Implementations",
+               +"Solutions by ",
+               +"Maintenance/OmitCategoriesCreated",
+               +"Collection Members",
+               +"Pages with too many expensive parser function calls",
+               +"Garbage collection",
+               +" User",
+               +"SQL User",
+               +"Typing",
+               +"Parameter passing",
+               +"Execution method",
+               +"Unimplemented tasks by language",
+               +"Wolfram Language",
+               +"/Omit",
+               +"Wren-",
+               +"WrenGo",
+               +"Phix/",
+               +"PhixClass",
+               +"Basic language learning",
+               +"Encyclopedia",
+               +"RCTemplates",
+               +"SysUtils",
+               +"Action! ",
+               +"Text processing",
+               +"Image processing",
+               +"Scala Digital Signal Processing",
+               +"List processing",
+               +"Digital signal processing",
+               +"Processing Python",
+               +"Classic CS problems and programs",
+               +"Brainf*** related",
+               +"Data Structures",
+               +"Perl modules",
+               +"Perl/",
+               +"Perl:LWP",
+               +"Perl 6 related",
+               +"Flow control",
+               +"Excessively difficult task",
+               +"WikiStubs",
+               +"Impl needed",
+               +"Recursion"
+              ];
+      begin
+         for I in Categories_To_Ignore'Range loop
+            declare
+               Category_At : constant Natural :=
+                               Index (+To_Lower (L),
+                                      To_Lower (
+                                        To_String (Categories_To_Ignore (I))));
+            begin
+               if Category_At /= 0 then
+                  return True;
+               end if;
+            end;
+         end loop;
+
+         return False;
+      end Ignore_Category;
+
       Title_Str       : constant String  := "title=""Category:";
       End_A_Tag_Str   : constant String  := "</a>";
       Space_Paren_Str : constant String := " (";
 
       Title_At        : constant Natural := Index (S, Title_Str);
    begin
-      --  Put_Line (S (S'First .. S'First + 500));
-      --  Put_Line ("Title_At: " & Title_At'Image);
-
       if Title_At /= 0 then
          declare
             Closing_Bracket_At : constant Natural :=
@@ -94,25 +160,15 @@ procedure Rank_Languages_By_Popularity is
                                 .. Space_At - 1),
                               ","));
          begin
-            --  Put_Line ("Closing_Bracket_At: " & Closing_Bracket_At'Image);
-            --  Put_Line ("End_A_Tag_At: " & End_A_Tag_At'Image);
-            --  Put_Line ("Language: " & Language);
-            --  Put_Line ("Space_Paren_At: " & Space_Paren_At'Image);
-            --  Put_Line ("Space_At: " & Space_At'Image);
-            --  Put_Line ("Count: " & Count'Image);
-
             if Closing_Bracket_At /= 0
               and then End_A_Tag_At /= 0
               and then Space_Paren_At /= 0
               and then Space_At /= 0
             then
                begin
-                  --  Put_Line ("Inserting: " & Count'Image & ", " & Language);
-
-                  Counts.Insert (New_Item => (Count, +Language));
-
-                  Total_Counts := Total_Counts + 1;
-                  --  Put_Line ("Element number: " & Total_Counts'Image);
+                  if Ignore_Category (Language) = False then
+                     Counts.Insert (New_Item => (Count, +Language));
+                  end if;
                exception
                   when Constraint_Error =>
                      Put_Line (Standard_Error, "Warning: repeated language: " &
