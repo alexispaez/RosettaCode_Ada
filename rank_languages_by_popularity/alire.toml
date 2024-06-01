@@ -1,0 +1,21 @@
+name = "rank_languages_by_popularity"
+description = ""
+version = "0.1.0-dev"
+
+authors = ["Jose Alexis Paez Thurgood"]
+maintainers = ["Jose Alexis Paez Thurgood <jose.alexis.paez.thurgood@gmail.com>"]
+maintainers-logins = ["alexispaez"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+website = ""
+tags = []
+
+executables = ["rank_languages_by_popularity"]
+
+[[depends-on]]
+aws = "^24.0.0"
+
+[[pins]]
+aws = { path='../../aws' }
+
+[[depends-on]]
+gnatcoll = "^24.0.0"

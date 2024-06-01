@@ -1,0 +1,22 @@
+with "config/towers_of_hanoi_config.gpr";
+project Towers_Of_Hanoi is
+
+   for Source_Dirs use ("src/", "config/");
+   for Object_Dir use "obj/" & Towers_Of_Hanoi_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Exec_Dir use "bin";
+   for Main use ("towers_of_hanoi.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use Towers_Of_Hanoi_Config.Ada_Compiler_Switches;
+   end Compiler;
+
+   package Binder is
+      for Switches ("Ada") use ("-Es"); --  Symbolic traceback
+   end Binder;
+
+   package Install is
+      for Artifacts (".") use ("share");
+   end Install;
+
+end Towers_Of_Hanoi;
