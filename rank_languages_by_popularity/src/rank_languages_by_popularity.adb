@@ -6,7 +6,7 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Text_IO;           use Ada.Text_IO;
 
 with Ada.Containers.Ordered_Sets;
-with Ada.Strings.Less_Case_Insensitive;
+with Ada.Strings.Unbounded.Less_Case_Insensitive;
 with Ada.Characters.Handling; use Ada.Characters.Handling;
 
 with AWS.Client;            use AWS.Client;
@@ -22,11 +22,10 @@ procedure Rank_Languages_By_Popularity is
 
    type A_Language_Count is
       record
-         Count    : Integer := 0;
+         Count    : Natural := 0;
          Language : Unbounded_String;
       end record;
 
-   overriding
    function "=" (L, R : A_Language_Count) return Boolean is
    begin
       return L.Language = R.Language;
@@ -38,8 +37,8 @@ procedure Rank_Languages_By_Popularity is
       return L.Count < R.Count
         or else (L.Count = R.Count
                  and then Less_Case_Insensitive
-                   (Left  => To_String (L.Language),
-                    Right => To_String (R.Language)));
+                   (Left  => L.Language,
+                    Right => R.Language));
    end "<";
 
    package Sets is new Ada.Containers.Ordered_Sets (A_Language_Count);
@@ -49,23 +48,26 @@ procedure Rank_Languages_By_Popularity is
 
    procedure Find_Counts (S : String) is
 
-      function Strip_Character (S : String; C : String) return String is
-         Comma_At : constant Natural := Ada.Strings.Fixed.Index (S, C);
+      function Strip_Character (S : String; C : Character) return String is
+         S_Copy_Str   : String (1 .. S'Length);
+         S_Copy_Index : Natural := 0;
       begin
-         if Comma_At = 0 then
-            return S;
-         else
-            return Strip_Character (S (S'First .. Comma_At - 1)
-                                    & S (Comma_At + 1 .. S'Last), C);
-         end if;
+         for I in S'Range loop
+            if S (I) /= C then
+               S_Copy_Index := S_Copy_Index + 1;
+               S_Copy_Str (S_Copy_Index) := S (I);
+            end if;
+         end loop;
+
+         return S_Copy_Str (S_Copy_Str'First .. S_Copy_Index);
       end Strip_Character;
 
       function Ignore_Category (L : String) return Boolean is
          type Unbounded_String_Array is array (Positive range <>)
            of Unbounded_String;
          --  This list is quite comprehensive, but not complete
-         Categories_To_Ignore : Unbounded_String_Array
-           := [+"Pages with syntax highlighting errors",
+         Categories_To_Ignore : Unbounded_String_Array := [
+               +"Pages with syntax highlighting errors",
                +"Programming",
                +"Examples needing attention",
                +"Tasks needing attention",
@@ -113,12 +115,11 @@ procedure Rank_Languages_By_Popularity is
                +"Recursion"
               ];
       begin
-         for I in Categories_To_Ignore'Range loop
+         for Category of Categories_To_Ignore loop
             declare
                Category_At : constant Natural :=
                                Index (+To_Lower (L),
-                                      To_Lower (
-                                        To_String (Categories_To_Ignore (I))));
+                                      To_Lower (To_String (Category)));
             begin
                if Category_At /= 0 then
                   return True;
@@ -129,8 +130,8 @@ procedure Rank_Languages_By_Popularity is
          return False;
       end Ignore_Category;
 
-      Title_Str       : constant String  := "title=""Category:";
-      End_A_Tag_Str   : constant String  := "</a>";
+      Title_Str       : constant String := "title=""Category:";
+      End_A_Tag_Str   : constant String := "</a>";
       Space_Paren_Str : constant String := " (";
 
       Title_At        : constant Natural := Index (S, Title_Str);
@@ -155,10 +156,12 @@ procedure Rank_Languages_By_Popularity is
                       " ");
 
             Count : constant Natural :=
-               Natural'Value (Strip_Character (
-                              S (Space_Paren_At + Space_Paren_Str'Length
-                                .. Space_At - 1),
-                              ","));
+                      Natural'Value (
+                                     Strip_Character (
+                                       S (Space_Paren_At +
+                                           Space_Paren_Str'Length
+                                         .. Space_At - 1),
+                                      ','));
          begin
             if Closing_Bracket_At /= 0
               and then End_A_Tag_At /= 0
@@ -196,8 +199,8 @@ procedure Rank_Languages_By_Popularity is
 
    Http_Source : constant AWS.Response.Data :=
                    AWS.Client.Get ("http://rosettacode.org/w/index.php?" &
-                                   "title=Special:Categories&limit=5000"
-                                   , Follow_Redirection => True);
+                                   "title=Special:Categories&limit=5000",
+                                   Follow_Redirection => True);
    Status      : Status_Code;
 begin
    Put_Line ("Getting website data...");
