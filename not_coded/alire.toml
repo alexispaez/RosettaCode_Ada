@@ -19,3 +19,6 @@ gnatcoll = "^24.0.0"
 
 [[depends-on]]
 aws = "^24.0.0"
+
+[[pins]]
+aws = { path='../../aws' }
