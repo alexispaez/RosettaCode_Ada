@@ -1,0 +1,12 @@
+name = "achilles_numbers"
+description = ""
+version = "0.1.0-dev"
+
+authors = ["Jose Alexis Paez Thurgood"]
+maintainers = ["Jose Alexis Paez Thurgood <jose.alexis.paez.thurgood@gmail.com>"]
+maintainers-logins = ["alexispaez"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+website = ""
+tags = []
+
+executables = ["achilles_numbers"]
